@@ -1,45 +1,40 @@
-# Thyroid Cancer snATAC-seq Pipelines
+# Thyroid Cancer snATAC-seq Analysis
 
-This repository contains a scripted ArchR analysis workflow for thyroid cancer single-nucleus ATAC-seq data. Each module is packaged as an executable `Rscript` with a shared configuration pattern to simplify customization and reproducibility.
+Thyroid cancer exhibits substantial heterogeneity that reflects its diverse mutational landscape. To capture the regulatory complexity underlying this diversity, we profiled chromatin accessibility in nine single-nucleus ATAC-seq samples spanning follicular, papillary, and anaplastic thyroid cancer. Malignant epithelial cells were stratified with curated thyroid cancer gene signatures, uncovering subtype-specific compositions across patients. Transcription factor programs highlighted distinct regulatory circuits, enhancer activity varied by cell identity, and promoter–enhancer coupling suggested subtype-dependent 3D genome organization. Integration with external methylation data further linked CpG accessibility to methylation status, revealing epigenetic patterns that may inform subtype-focused therapeutic strategies.
 
 ![Summary](https://github.com/HoeBin/Thyroid-Cancer-snATACseq/blob/main/Fig/Summary.png)
 
 ## Getting Started
 
-1. Clone the repository and install the required R packages (ArchR and its dependencies).
-2. For each script, adjust the `config` block near the top to point at your data directories, project output locations, and optional resources (e.g. `renv` activation, macs2 binary, HOMER outputs).
-3. Execute individual steps with `Rscript Code/<script-name>.R` to replicate or adapt portions of the analysis pipeline.
+1. Clone the repository and ensure that the necessary R packages for snATAC-seq analysis are installed.
+2. Update the `config` list near the top of each script to point to local data directories, output destinations, and optional resources (such as `renv` activation scripts, macs2 binaries, or HOMER outputs).
+3. Run individual modules with `Rscript Code/<script-name>.R` to execute the corresponding stage of the pipeline or adapt it to new datasets.
 
 ## Pipeline Modules
 
 - `Code/01_Global_Basic.R`
-  - Builds the global ArchR project, performs QC plotting, dimensional reduction, clustering, RNA integration, and saves intermediate projects and marker results.
-  - Accepts configurable sample metadata, output paths, and filtering thresholds via the `config` list.
+  - Builds the core single-nucleus chromatin accessibility project, performs quality control, dimensionality reduction, clustering, and RNA integration, and stores intermediate results for reuse.
+  - Offers configurable sample metadata, output paths, and filtering thresholds through the `config` block.
 
 - `Code/02_Epi_Subset.R`
-  - Subsets epithelial cells from the global project, re-clusters with tailored parameters, regenerates embeddings, and computes module scores for predefined gene sets.
-  - Persists the subset project to a dedicated directory for downstream analyses.
+  - Extracts epithelial cells, re-optimizes embeddings and clustering parameters, and computes module scores for thyroid cancer–related gene sets before saving a focused project for downstream work.
 
 - `Code/03_Epi_Annotation.R`
-  - Derives refined epithelial annotations using Gaussian mixture modelling on TDS/ERK module scores, updates `sub.annotation`, and exports summary plots (counts, proportions, violin plots).
-  - Logs outputs and warns when expected metadata or colour mappings are missing.
+  - Refines epithelial annotations via Gaussian mixture modelling on module scores, updates `sub.annotation`, and generates plots summarizing subtype distributions, sample proportions, and score variation.
 
 - `Code/04_Epi_Markers_Peaks.R`
-  - Compares epithelial groups to define marker peaks, draws browser tracks, exports pseudobulk gene-score matrices, and triggers macs2-based peak calling.
-  - Generates heatmaps and Venn-style overlap summaries for marker genes versus RNA DEG sets.
+  - Identifies marker peaks across epithelial groups, writes browser tracks, exports pseudobulk gene-score matrices, and orchestrates peak calling. It also compares accessibility markers to RNA differential-expression sets to highlight shared drivers.
 
 - `Code/05_Epi_MarkerPeaks.R`
-  - Focuses on visualization of marker peaks: browser tracks by grouping, marker heatmaps, pairwise tests, and cell-level peak heatmaps when helper functions are available.
-  - Writes marker peak objects, BED files for up/down peaks, and styled ArchR plots under `plots/`.
+  - Focuses on visualization of marker peaks through browser plots, heatmaps, pairwise comparisons, and cell-level accessibility summaries, producing publication-ready figures and BED exports.
 
 - `Code/06_Epi_Motifs.R`
-  - Adds motif annotations, performs motif enrichment for pairwise marker tests and marker peaks, and produces ranked scatter plots plus enrichment heatmaps.
-  - Optionally summarizes HOMER motif results if a HOMER output directory is provided.
+  - Performs motif enrichment analyses for pairwise contrasts and marker peaks, creates ranked motif scatter plots and enrichment heatmaps, and optionally aggregates HOMER outputs when available.
 
 ## Output Structure
 
-Each script writes logs, figures, and intermediate RDS/CSV exports to a script-specific output directory (configured via `config$output_name`). Re-running scripts with updated inputs will refresh the contents while preserving the organized layout.
+Each module records logs, figures, and intermediate RDS/CSV files in a script-specific output directory (controlled via `config$output_name`). Re-running modules with updated inputs refreshes their respective outputs while preserving the organized layout of derived results.
 
 ## Citation
 
-If you use these scripts, please cite ArchR and any accompanying datasets or publications described in your work.
+If these scripts contribute to your research, please cite the relevant datasets and publications and acknowledge the creators of the analysis pipeline.
