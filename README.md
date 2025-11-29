@@ -1,40 +1,38 @@
 # Thyroid Cancer snATAC-seq Analysis
 
-Thyroid cancer exhibits substantial heterogeneity that reflects its diverse mutational landscape. To capture the regulatory complexity underlying this diversity, we profiled chromatin accessibility in nine single-nucleus ATAC-seq samples spanning follicular, papillary, and anaplastic thyroid cancer. Malignant epithelial cells were stratified with curated thyroid cancer gene signatures, uncovering subtype-specific compositions across patients. Transcription factor programs highlighted distinct regulatory circuits, enhancer activity varied by cell identity, and promoter–enhancer coupling suggested subtype-dependent 3D genome organization. Integration with external methylation data further linked CpG accessibility to methylation status, revealing epigenetic patterns that may inform subtype-focused therapeutic strategies.
+Thyroid cancer is a highly heterogeneous disease whose phenotype shifts with each mutational background. While transcriptomic studies have been plentiful, the chromatin landscape that orchestrates these states remains less explored. Here, single-nucleus ATAC-seq profiles from nine tumors spanning follicular (FTC), papillary (PTC), and anaplastic (ATC) thyroid cancers resolve malignant epithelial heterogeneity by leveraging curated thyroid cancer gene signatures. Cell type–specific transcription factor programs uncover regulatory factors that define lineage and aggressiveness, while enhancer-driven networks highlight state-dependent regulatory outputs. By integrating external DNA methylation resources, we further link CpG accessibility to methylation status, demonstrating concordant epigenetic wiring across modalities. Promoter–enhancer coupling and predicted Hi-C contacts reveal subtype-biased 3D chromatin organization, providing a framework to interpret epigenetic regulation and to prioritize subtype-specific therapeutic strategies.
 
 ![Summary](https://github.com/HoeBin/Thyroid-Cancer-snATACseq/blob/main/Fig/Summary.png)
 
-## Getting Started
+## Organized Pipeline Overview
 
-1. Clone the repository and ensure that the necessary R packages for snATAC-seq analysis are installed.
-2. Update the `config` list near the top of each script to point to local data directories, output destinations, and optional resources (such as `renv` activation scripts, macs2 binaries, or HOMER outputs).
-3. Run individual modules with `Rscript Code/<script-name>.R` to execute the corresponding stage of the pipeline or adapt it to new datasets.
+This folder contains a streamlined ArchR-based workflow for the Thyroid ATAC project. Each script focuses on a single stage, keeps only the core logic, and includes step-by-step comments so you can rerun or adapt individual analyses easily.
 
-## Pipeline Modules
+## Prerequisites
 
-- `Code/01_Global_Basic.R`
-  - Builds the core single-nucleus chromatin accessibility project, performs quality control, dimensionality reduction, clustering, and RNA integration, and stores intermediate results for reuse.
-  - Offers configurable sample metadata, output paths, and filtering thresholds through the `config` block.
+- R with ArchR ecosystem (ArchR, Signac, Seurat, monocle3, etc.).
+- Access to the original renv environments referenced in the scripts (`/home/Data_Drive_8TB/ghlqls/Renv/...`).
+- Project input data on the same paths used inside each script (fragment files, GEO methylation tables, etc.).
+- Enough CPU and RAM for ArchR to parallelize (most scripts call `addArchRThreads(threads = 16)`).
 
-- `Code/02_Epi_Subset.R`
-  - Extracts epithelial cells, re-optimizes embeddings and clustering parameters, and computes module scores for thyroid cancer–related gene sets before saving a focused project for downstream work.
+> **Tip:** Each script hard-codes the project/data roots at the top. Update those paths if your environment differs.
 
-- `Code/03_Epi_Annotation.R`
-  - Refines epithelial annotations via Gaussian mixture modelling on module scores, updates `sub.annotation`, and generates plots summarizing subtype distributions, sample proportions, and score variation.
+## Script Details
 
-- `Code/04_Epi_Markers_Peaks.R`
-  - Identifies marker peaks across epithelial groups, writes browser tracks, exports pseudobulk gene-score matrices, and orchestrates peak calling. It also compares accessibility markers to RNA differential-expression sets to highlight shared drivers.
+- **01_archr_total_qc_global.R** – Sets up the ArchR project, converts fragment files into Arrow files, scores doublets, and exports QC plots summarizing fragment counts and TSS enrichment. Use this to regenerate the master ArchR project.
+- **02_archr_epi_subset.R** – Loads the global project, filters to epithelial cells (excluding PDTC), recomputes Iterative LSI + Harmony embeddings, clusters cells, and saves UMAP/TSNE PDFs. This is the entry point for all epithelial downstream analyses.
+- **03_archr_annotation.R** – Focuses on per-sample annotations: exports grouped cell counts, UMAPs colored by metadata, and imputed module scores (TDS/ERK/BRS) per sample and group for quick QC or reporting.
+- **04_archr_epi_markers_peakcalling.R** – Identifies gene-score markers for each epithelial subtype, compares them with external/internal RNA DEG lists, and writes convenient overlap summaries and ready-to-plot heatmap inputs.
+- **05_archr_epi_markerpeak.R** – Works at the peak level, generating browser tracks for driver genes, computing marker peaks across multiple groupings, plotting heatmaps/MA/volcano plots, and saving pairwise differential results.
+- **06_tf_motif.R** – Adds motif and TFBS annotations, runs motif enrichment on the stored marker peaks, exports enrichment heatmaps, and correlates gene scores with motif deviations to suggest candidate regulators.
+- **07_pseudo_time.R** – Bridges Seurat RNA and ATAC objects: builds transfer anchors, co-embeds both modalities, adds module scores, converts to a Monocle3 CDS, and plots pseudotime trajectories with the saved trajectory object.
+- **08_dna_methylation.R** – Processes the GSE97466 methylation dataset (metadata, beta matrix, liftOver), aggregates beta values per ArchR differential peak, summarizes cancer-type differences, and compares with ATAC marker peaks.
+- **09_co_acc.R** – Computes co-accessibility directly from the epithelial ArchR project, annotates promoter/distal pairs, and exports full and filtered tables to support peak–gene linkage analyses.
 
-- `Code/05_Epi_MarkerPeaks.R`
-  - Focuses on visualization of marker peaks through browser plots, heatmaps, pairwise comparisons, and cell-level accessibility summaries, producing publication-ready figures and BED exports.
+## Running the Pipeline
 
-- `Code/06_Epi_Motifs.R`
-  - Performs motif enrichment analyses for pairwise contrasts and marker peaks, creates ranked motif scatter plots and enrichment heatmaps, and optionally aggregates HOMER outputs when available.
+1. Launch an R session with access to the same renv environment as the original project.
+2. Execute the scripts in numeric order (`Rscript Organized_Pipeline/01_archr_total_qc_global.R`, etc.). Each script handles its own working directories and saves files beneath the project root.
+3. Inspect the PDFs/CSVs generated in the subfolders (`Annotation`, `Markers`, `MarkerPeaks`, `Motif`, `Pseudotime`, `DAR_Methylation`, `CoAccessibility`).
 
-## Output Structure
-
-Each module records logs, figures, and intermediate RDS/CSV files in a script-specific output directory (controlled via `config$output_name`). Re-running modules with updated inputs refreshes their respective outputs while preserving the organized layout of derived results.
-
-## Citation
-
-If these scripts contribute to your research, please cite the relevant datasets and publications and acknowledge the creators of the analysis pipeline.
+With this organization you can re-run the entire workflow or pick individual stages (e.g., re-run motif enrichment only) without wading through large, monolithic notebooks.
