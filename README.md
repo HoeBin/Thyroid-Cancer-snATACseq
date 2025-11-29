@@ -36,3 +36,12 @@ This folder contains a streamlined ArchR-based workflow for the Thyroid ATAC pro
 3. Inspect the PDFs/CSVs generated in the subfolders (`Annotation`, `Markers`, `MarkerPeaks`, `Motif`, `Pseudotime`, `DAR_Methylation`, `CoAccessibility`).
 
 With this organization you can re-run the entire workflow or pick individual stages (e.g., re-run motif enrichment only) without wading through large, monolithic notebooks.
+
+## Citation
+
+If you reuse or adapt this pipeline, please cite the Thyroid Cancer snATAC-seq study along with ArchR and any other core packages you rely on. Replace the placeholders below with the final publication or preprint details once available:
+
+```
+Author List. Title of the Thyroid Cancer snATAC-seq study. Journal/Preprint Server, Year.
+Granja et al. ArchR: An integrative framework for single-cell chromatin accessibility analysis. bioRxiv 2020.
+```
